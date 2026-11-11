@@ -7,6 +7,7 @@ namespace InsuranceSystem.Core.Enums
         New,
         Pending,
         Approved,
-        Done
+        Paid,
+        Rejected
     }
 }

@@ -6,6 +6,9 @@ using System.Text;
 
 namespace InsuranceSystem.BLL.Persistence
 {
+    /// <summary>
+    /// Represents the context for managing insurance data.
+    /// </summary>
     public class InsuranceContext
     {
         private readonly IStorage _storage;

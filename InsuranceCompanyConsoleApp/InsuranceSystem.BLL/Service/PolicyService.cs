@@ -13,14 +13,34 @@ namespace InsuranceSystem.BLL.Services
 
         public PolicyService(InsuranceContext context) => _context = context;
 
+        /// <summary>
+        /// Gets a read-only list of all policies in the system.
+        /// </summary>
         public IReadOnlyList<Policy> Policies => _context.Database.Policies;
 
+        /// <summary>
+        /// Calculates the cost of a policy based on its coverage amount using a predefined cost rate.
+        /// </summary>
+        /// <param name="coverageAmount"></param>
+        /// <returns></returns>
         public static decimal CalculateCost(decimal coverageAmount) => coverageAmount * CostRate;
 
+        /// <summary>
+        /// Gets a specific policy by its ID.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        /// <exception cref="EntityNotFoundException"></exception>
         public Policy Get(int id) =>
             _context.Database.Policies.FirstOrDefault(p => p.Id == id)
             ?? throw new EntityNotFoundException("Поліс", id);
 
+        /// <summary>
+        /// Adds a new policy to the system after validating its details.
+        /// </summary>
+        /// <param name="policy"></param>
+        /// <exception cref="ValidationException"></exception>
+        /// <exception cref="EntityNotFoundException"></exception>
         public void Add(Policy policy)
         {
             ArgumentNullException.ThrowIfNull(policy);
@@ -47,6 +67,17 @@ namespace InsuranceSystem.BLL.Services
             });
             _context.Save();
         }
+
+        /// <summary>
+        /// Updates an existing policy with new information.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="type"></param>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <param name="coverageAmount"></param>
+        /// <exception cref="EntityNotFoundException"></exception>
+        /// <exception cref="ValidationException"></exception>
         public void Update(int id, PolicyType? type = null, DateTime? startDate = null,
                            DateTime? endDate = null, decimal? coverageAmount = null)
         {
@@ -68,12 +99,22 @@ namespace InsuranceSystem.BLL.Services
             _context.Save();
         }
 
+        /// <summary>
+        /// Changes status of policy
+        /// </summary>
+        /// <param name="id">
+        /// <param name="newStatus">
         public void ChangeStatus(int id, PolicyStatus newStatus)
         {
             Get(id).Status = newStatus;
             _context.Save();
         }
 
+        /// <summary>
+        /// Deletes policy 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <exception cref="ValidationException"></exception>
         public void Delete(int id)
         {
             var policy = Get(id);
@@ -86,6 +127,15 @@ namespace InsuranceSystem.BLL.Services
             _context.Save();
         }
 
+        /// <summary>
+        /// Searches policy for type, client id, status, min | max cost. 
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="clientId"></param>
+        /// <param name="status"></param>
+        /// <param name="minCost"></param>
+        /// <param name="maxCost"></param>
+        /// <returns>List of Polices</returns>
         public List<Policy> Search(PolicyType? type = null, int? clientId = null,
                                    PolicyStatus? status = null,
                                    decimal? minCost = null, decimal? maxCost = null)
@@ -98,12 +148,16 @@ namespace InsuranceSystem.BLL.Services
                 (!maxCost.HasValue || p.Cost <= maxCost.Value)
             ).ToList();
         }
-
         private static void ValidateDates(DateTime start, DateTime end)
         {
             if (end <= start)
                 throw new ValidationException("Дата завершення має бути пізнішою за дату початку!");
         }
+
+        /// <summary>
+        /// Count of expired date polices
+        /// </summary>
+        /// <returns>Count in the Int</returns>
         public int RefreshStatuses()
         {
             var now = DateTime.Now;

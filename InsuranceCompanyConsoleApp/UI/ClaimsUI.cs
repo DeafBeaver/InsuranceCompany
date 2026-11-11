@@ -9,7 +9,9 @@ namespace InsuranceSystem.ConsoleUI
         static void ClaimsMenu(ClaimService claims, PolicyService policies) => Menu("Меню страхових випадків",
             ("Зареєструвати страховий випадок", () => RegisterClaim(claims, policies)),
             ("Переглянути страхові випадки",    () => ShowClaims(claims)),
-            ("Змінити статус випадку",          () => ChangeClaimStatus(claims)));
+            ("Змінити статус випадку",          () => ChangeClaimStatus(claims)),
+            ("Провести виплату",               () => DoPayout(claims))
+        );
 
         static void ShowClaims(ClaimService claims)
         {
@@ -37,6 +39,15 @@ namespace InsuranceSystem.ConsoleUI
             };
             claims.Add(claim);
             Console.WriteLine($"Страховий випадок зареєстровано! ID: {claim.Id}");
+        }
+
+        static void DoPayout(ClaimService claims)
+        {
+            ShowClaims(claims);
+            int id = Input.RequireInt("ID випадку: ");
+            var claim = claims.Claims.FirstOrDefault(c => c.Id == id);
+            claims.DoPayout(id);
+            Console.WriteLine($"Виплата по страховому випадку ID {id} проведена.");
         }
 
         static void ChangeClaimStatus(ClaimService claims)

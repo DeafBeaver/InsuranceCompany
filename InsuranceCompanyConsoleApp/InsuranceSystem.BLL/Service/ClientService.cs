@@ -11,12 +11,26 @@ namespace InsuranceSystem.BLL.Services
 
         public ClientService(InsuranceContext context) => _context = context;
 
+        /// <summary>
+        /// Gets a read-only list of all clients in the system.
+        /// </summary>
         public IReadOnlyList<Client> Clients => _context.Database.Clients;
 
+        /// <summary>
+        /// Gets a specific client by their ID.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        /// <exception cref="EntityNotFoundException"></exception>
         public Client Get(int id) =>
             _context.Database.Clients.FirstOrDefault(c => c.Id == id)
             ?? throw new EntityNotFoundException("Клієнт", id);
 
+        /// <summary>
+        /// Adds a new client to the system.
+        /// </summary>
+        /// <param name="client"></param>
+        /// <exception cref="ValidationException"></exception>
         public void Add(Client client)
         {
             ArgumentNullException.ThrowIfNull(client);
@@ -29,6 +43,13 @@ namespace InsuranceSystem.BLL.Services
             _context.Save();
         }
 
+        /// <summary>
+        /// Updates an existing client's information. Only non-null parameters will be updated.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="fullName"></param>
+        /// <param name="contactInfo"></param>
+        /// <param name="type"></param>
         public void Update(int id, string? fullName, string? contactInfo, ClientType? type)
         {
             var client = Get(id);
@@ -40,6 +61,9 @@ namespace InsuranceSystem.BLL.Services
             _context.Save();
         }
 
+        /// <summary>
+        /// Deletes a client from the system. This will also delete any associated requests.
+        /// </summary>
         public void Delete(int id)
         {
             var client = Get(id);
@@ -48,9 +72,16 @@ namespace InsuranceSystem.BLL.Services
                 throw new ValidationException("Не можна видалити клієнта, у якого є поліси!");
 
             _context.Database.Clients.Remove(client);
+            _context.Database.Requests.RemoveAll(r => r.ClientId == id);
             _context.Save();
         }
 
+        /// <summary>
+        /// Assigns agent to a client. If agentId is null, it will disassociate the client from any agent.
+        /// </summary>
+        /// <param name="clientId"></param>
+        /// <param name="agentId"></param>
+        /// <exception cref="EntityNotFoundException"></exception>
         public void SetAgent(int clientId, int? agentId)
         {
             var client = Get(clientId);
@@ -62,19 +93,24 @@ namespace InsuranceSystem.BLL.Services
             _context.Save();
         }
 
+        /// <summary>
+        /// Returns the number of policies associated with a specific client.
+        /// </summary>
+        /// <param name="clientId"></param>
+        /// <returns></returns>
         public int CountPolicies(int clientId) =>
             _context.Database.Policies.Count(p => p.ClientId == clientId);
 
+        /// <summary>
+        /// Returns the total amount of payouts associated with a specific client.
+        /// </summary>
+        /// <param name="clientId"></param>
+        /// <returns></returns>
         public decimal TotalPayouts(int clientId)
         {
-            var policyIds = _context.Database.Policies
-                .Where(p => p.ClientId == clientId)
-                .Select(p => p.Id)
-                .ToHashSet();
-
-            return _context.Database.Claims
-                .Where(c => c.Status == ClaimStatus.Done && policyIds.Contains(c.PolicyId))
-                .Sum(c => c.PayoutAmount);
+            return _context.Database.Payments
+                .Where(p => p.Type == PaymentType.Payout && p.PolicyId == clientId)
+                .Sum(p => p.Amount);
         }
     }
 }

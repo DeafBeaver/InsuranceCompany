@@ -6,6 +6,9 @@ using InsuranceSystem.BLL.Persistence;
 
 namespace InsuranceSystem.BLL.Persistence
 {
+    /// <summary>
+    /// Container class for holding all insurance-related data, including clients, policies, agents, claims, payments, and requests.
+    /// </summary>
     public class DatabaseContainer
     {
         public int NextClientId { get; set; } = 1;
@@ -22,6 +25,9 @@ namespace InsuranceSystem.BLL.Persistence
         public List<Request> Requests { get; set; } = new();
     }
 
+    /// <summary>
+    /// Json-based implementation of the IStorage interface, providing methods to save and load insurance data to and from a JSON file.
+    /// </summary>
     public class JsonStorage : IStorage
     {
         private readonly string _filePath;
