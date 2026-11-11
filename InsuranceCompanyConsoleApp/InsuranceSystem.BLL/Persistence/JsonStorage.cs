@@ -12,10 +12,14 @@ namespace InsuranceSystem.BLL.Persistence
         public int NextPolicyId { get; set; } = 1;
         public int NextAgentId { get; set; } = 1;
         public int NextClaimId { get; set; } = 1;
+        public int NextPaymentId { get; set; } = 1;
+        public int NextRequestId { get; set; } = 1;
         public List<Client> Clients { get; set; } = new();
         public List<Policy> Policies { get; set; } = new();
         public List<Agent> Agents { get; set; } = new();
         public List<Claim> Claims { get; set; } = new();
+        public List<Payment> Payments { get; set; } = new();
+        public List<Request> Requests { get; set; } = new();
     }
 
     public class JsonStorage : IStorage

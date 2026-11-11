@@ -3,8 +3,6 @@ using InsuranceSystem.Core.Exceptions;
 
 namespace InsuranceSystem.ConsoleUI
 {
-    // Хелпери вводу. Правило: порожній ввід (Enter) = null = "пропустити",
-    // а неправильний ввід = ValidationException (нічого не ігнорується мовчки).
     internal static class Input
     {
         public static string? Text(string prompt)
@@ -31,7 +29,6 @@ namespace InsuranceSystem.ConsoleUI
                 ? d : throw new ValidationException("Невірний формат числа.");
         }
 
-        // Підписи беруться з enum, тому розсинхрону з кодом бути не може
         public static T? Choice<T>(string title) where T : struct, Enum
         {
             Console.WriteLine(title);
@@ -45,8 +42,16 @@ namespace InsuranceSystem.ConsoleUI
                 return (T)Enum.ToObject(typeof(T), n);
             throw new ValidationException("Невірний вибір.");
         }
+        public static DateTime? Date(string prompt)
+        {
+            Console.Write(prompt);
+            var s = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(s)) return null;
+            return DateTime.TryParseExact(s.Trim(), "dd.MM.yyyy", CultureInfo.InvariantCulture,
+                                          DateTimeStyles.None, out var d)
+                ? d : throw new ValidationException("Невірний формат дати. Приклад: 31.12.2026");
+        }
 
-        // Обов'язкові значення
         public static string RequireText(string prompt) =>
             Text(prompt) ?? throw new ValidationException("Поле не може бути порожнім.");
         public static int RequireInt(string prompt) =>
@@ -55,5 +60,7 @@ namespace InsuranceSystem.ConsoleUI
             Decimal(prompt) ?? throw new ValidationException("Поле не може бути порожнім.");
         public static T RequireChoice<T>(string title) where T : struct, Enum =>
             Choice<T>(title) ?? throw new ValidationException("Потрібно обрати значення.");
+        public static DateTime RequireDate(string prompt) =>
+            Date(prompt) ?? throw new ValidationException("Поле не може бути порожнім.");
     }
 }

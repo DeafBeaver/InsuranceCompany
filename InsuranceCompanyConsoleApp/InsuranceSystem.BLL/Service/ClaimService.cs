@@ -50,6 +50,17 @@ namespace InsuranceSystem.BLL.Services
                     $"Неможливо змінити статус з {claim.Status} на {newStatus}.");
 
             claim.Status = newStatus;
+            if (newStatus == ClaimStatus.Done)
+            {
+                _context.Database.Payments.Add(new Payment
+                {
+                    Id = _context.Database.NextPaymentId++,
+                    Date = DateTime.Now,
+                    Amount = claim.PayoutAmount,
+                    Type = PaymentType.Payout,
+                    PolicyId = claim.PolicyId
+                });
+            }
             _context.Save();
         }
     }

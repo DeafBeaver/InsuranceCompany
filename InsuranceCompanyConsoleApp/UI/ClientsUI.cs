@@ -12,7 +12,6 @@ namespace InsuranceSystem.ConsoleUI
             ("Оновити клієнта",      () => UpdateClient(clients)),
             ("Видалити клієнта",     () => DeleteClient(clients)));
 
-        // Короткий список (ID + ПІБ), щоб було з чого обирати ID
         static void ListClients(ClientService clients)
         {
             Console.WriteLine("Клієнти:");

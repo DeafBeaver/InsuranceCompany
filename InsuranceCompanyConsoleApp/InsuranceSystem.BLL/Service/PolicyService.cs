@@ -37,6 +37,14 @@ namespace InsuranceSystem.BLL.Services
             policy.Status = PolicyStatus.Active;
 
             _context.Database.Policies.Add(policy);
+            _context.Database.Payments.Add(new Payment
+            {
+                Id = _context.Database.NextPaymentId++,
+                Date = DateTime.Now,
+                Amount = policy.Cost,
+                Type = PaymentType.Contribution,
+                PolicyId = policy.Id
+            });
             _context.Save();
         }
         public void Update(int id, PolicyType? type = null, DateTime? startDate = null,
@@ -74,6 +82,7 @@ namespace InsuranceSystem.BLL.Services
                 throw new ValidationException("Не можна видалити поліс, за яким є страхові випадки!");
 
             _context.Database.Policies.Remove(policy);
+            _context.Database.Payments.RemoveAll(p => p.PolicyId == id);
             _context.Save();
         }
 

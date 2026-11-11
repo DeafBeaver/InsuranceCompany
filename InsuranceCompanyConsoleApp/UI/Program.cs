@@ -11,7 +11,6 @@ namespace InsuranceSystem.ConsoleUI
         {
             Console.OutputEncoding = Encoding.UTF8;
 
-            // Менеджер створюється ОДИН раз, до меню
             InsuranceSystemManager app;
             try
             {
@@ -27,10 +26,11 @@ namespace InsuranceSystem.ConsoleUI
                 ("Клієнти",          Sub(() => ClientsMenu(app.Clients, app.Agents))),
                 ("Поліси",           Sub(() => PoliciesMenu(app.Policies, app.Clients))),
                 ("Агенти",           Sub(() => AgentsMenu(app.Agents, app.Clients))),
-                ("Страхові випадки", Sub(() => ClaimsMenu(app.Claims, app.Policies))));
+                ("Страхові випадки", Sub(() => ClaimsMenu(app.Claims, app.Policies))),
+                ("Статистика",       Sub(() => StatisticsMenu(app.Statistics))),
+                ("Запити клієнтів", Sub(() => RequestsMenu(app.Requests, app.Clients))));
         }
 
-        // Один обробник помилок на всю програму
         static void Run(Action action)
         {
             try { action(); }
@@ -38,7 +38,6 @@ namespace InsuranceSystem.ConsoleUI
             catch (Exception ex) { Console.WriteLine($"Неочікувана помилка: {ex.Message}"); }
         }
 
-        // Після повернення з підменю пауза не потрібна (вона лише після дій)
         private static bool _skipPause;
 
         static Action Sub(Action submenu) => () => { submenu(); _skipPause = true; };
@@ -65,7 +64,7 @@ namespace InsuranceSystem.ConsoleUI
                 Console.Write("Оберіть опцію: ");
 
                 var choice = Console.ReadLine();
-                if (choice == null || choice == "0") return; // null = кінець вводу (Ctrl+Z / Ctrl+D)
+                if (choice == null || choice == "0") return;
 
                 _skipPause = false;
                 if (int.TryParse(choice, out int n) && n >= 1 && n <= items.Length)
