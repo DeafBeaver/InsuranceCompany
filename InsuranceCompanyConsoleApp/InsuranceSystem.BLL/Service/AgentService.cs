@@ -71,6 +71,9 @@ namespace InsuranceSystem.BLL.Services
         {
             var agent = Get(id);
 
+            if (_context.Database.Policies.Any(p => p.AgentId == id))
+                throw new ValidationException("До агента прив'язані поліси.");
+
             foreach (var client in _context.Database.Clients.Where(c => c.AgentId == id))
                 client.AgentId = null;
 

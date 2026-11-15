@@ -7,12 +7,17 @@ namespace InsuranceSystem.BLL.Services
 {
     public class RequestService
     {
+        private PolicyService _policies;
         private readonly InsuranceContext _context;
 
-        public RequestService(InsuranceContext context) => _context = context;
+        public RequestService(InsuranceContext context, PolicyService policyService)
+        {
+            _context = context;
+            _policies = policyService;
+        }
 
         /// <summary>
-        /// Gets a read-only list of all claims in the system.
+        /// Gets a read-only list of all requests in the system.
         /// </summary>
         public IReadOnlyList<Request> Requests => _context.Database.Requests;
 
@@ -61,17 +66,45 @@ namespace InsuranceSystem.BLL.Services
         }
 
         /// <summary>
-        /// Changes the status of the specified request to "Processed" (<see cref="RequestStatus.Processed"/>).
+        /// Creates and saves a new insurance policy based on a client's request, 
+        /// validating agent assignment and marking the request as processed.
         /// </summary>
-        /// <param name="id">The unique identifier of the request.</param>
-        /// <exception cref="EntityNotFoundException">Thrown if the request is not found.</exception>
-        /// <exception cref="ValidationException">Thrown if the request is already processed.</exception>
-        public void MarkProcessed(int id)
+        /// <param name="requestId">The unique identifier of the client's request.</param>
+        /// <param name="agentId">The unique identifier of the agent processing the request.</param>
+        /// <exception cref="EntityNotFoundException">
+        /// Thrown if the request with <paramref name="requestId"/> or the associated client is not found.
+        /// </exception>
+        /// <exception cref="ValidationException">
+        /// Thrown if the request has already been processed, the client has no assigned agent, 
+        /// or the client is assigned to a different agent than <paramref name="agentId"/>.
+        /// </exception>
+        public void MakePolicyByRequest(int requestId, int agentId)
         {
-            var request = Get(id);
+            var request = Get(requestId);
             if (request.Status == RequestStatus.Processed)
                 throw new ValidationException("Запит уже оброблено!");
 
+            var client = _context.Database.Clients.Find(c => c.Id == request.ClientId) 
+                ?? throw new EntityNotFoundException("Клієнт", request.ClientId);
+
+            if (client.AgentId == null)
+                throw new ValidationException("За клієнтом не закріплено агента.");
+            if (client.AgentId != agentId)
+                throw new ValidationException("Клієнт закріплений за іншим агентом.");
+
+            var start = DateTime.Now;
+            var policy = new Policy
+            {
+                Type = request.Type,
+                CoverageAmount = request.DesiredCoverage,
+                StartDate = start,
+                EndDate = start.AddMonths(request.TermMonths),
+                ClientId = request.ClientId,
+                AgentId = agentId,
+                RequestId = request.Id
+            };
+
+            _policies.Add(policy);
             request.Status = RequestStatus.Processed;
             _context.Save();
         }

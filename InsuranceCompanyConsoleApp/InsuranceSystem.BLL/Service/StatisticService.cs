@@ -42,11 +42,9 @@ namespace InsuranceSystem.BLL.Service
         {
             var agent = _context.Database.Agents.FirstOrDefault(a => a.Id == agentId)
                 ?? throw new EntityNotFoundException("Агент", agentId);
-
-            var clientIds = _context.Database.Clients
-                .Where(c => c.AgentId == agentId).Select(c => c.Id).ToHashSet();
+            
             var policies = _context.Database.Policies
-                .Where(p => clientIds.Contains(p.ClientId)).ToList();
+                .Where(p => p.AgentId == agentId).ToList();
 
             return (policies.Count, policies.Sum(p => p.Cost) * agent.CommissionRate);
         }

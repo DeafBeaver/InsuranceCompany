@@ -1,3 +1,4 @@
+using InsuranceSystem.Core.Exceptions;
 using InsuranceSystem.BLL.Services;
 using InsuranceSystem.Core.Entities;
 
@@ -5,13 +6,18 @@ namespace InsuranceSystem.ConsoleUI
 {
     internal partial class Program
     {
-        static void AgentsMenu(AgentService agents, ClientService clients) => Menu("Меню агентів",
-            ("Додати агента",                () => AddAgent(agents)),
-            ("Переглянути агентів",          () => ShowAgents(agents)),
+        static void AgentsMenu(AgentService agents, ClientService clients, RequestService request) => Menu("Меню агентів",
+            ("Додати агента", () => AddAgent(agents)),
+            ("Переглянути агентів", () => ShowAgents(agents)),
             ("Оновити інформацію про агента", () => UpdateAgent(agents)),
-            ("Видалити агента",              () => DeleteAgent(agents)),
-            ("Призначити клієнта агенту",    () => AssignClient(agents, clients)),
-            ("Відписати клієнта від агента", () => UnassignClient(clients)));
+            ("Видалити агента", () => DeleteAgent(agents)),
+            ("Призначити клієнта агенту", () => AssignClient(agents, clients)),
+            ("Відписати клієнта від агента", () => UnassignClient(clients)),
+            ("Запити конкретного клієнта", () => ShowClientRequests(request, clients)),
+            ("Створити поліс за запитом", () => ProcessRequest(request, agents, clients)),
+            ("Підібрати поліси під запит", () => MatchRequest(request)));
+
+
 
         static void ShowAgents(AgentService agents)
         {
@@ -71,6 +77,51 @@ namespace InsuranceSystem.ConsoleUI
             ListClients(clients);
             clients.SetAgent(Input.RequireInt("ID клієнта: "), null);
             Console.WriteLine("Клієнта відв'язано від агента!");
+        }
+
+        static void ProcessRequest(RequestService requests, AgentService agents, ClientService clients)
+        {
+            ShowRequests(requests.Requests);
+
+            int requestId = Input.RequireInt("ID запиту: ");
+
+            ShowAgents(agents);
+
+            int agentId = Input.RequireInt("ID агента якого закріпити: ");
+
+            var client = clients.Get(requests.Get(requestId).ClientId);
+
+            if (client.AgentId == null)
+            {
+                Console.Write("За клієнтом не закріплено агента. Закріпити за цим агентом? (т/н): ");
+                if (Console.ReadLine()?.Trim().ToLower() != "т")
+                    throw new ValidationException("Скасовано: потрібен закріплений агент.");
+
+                clients.SetAgent(client.Id, agentId);
+            }
+            
+
+            requests.MakePolicyByRequest(requestId, agentId);
+            Console.WriteLine($"Поліс створено по запиту {requestId}!");
+        }
+
+        static void ShowClientRequests(RequestService requests, ClientService clients)
+        {
+            ListClients(clients);
+            int clientId = Input.RequireInt("ID клієнта: ");
+            ShowRequests(requests.GetByClient(clientId));
+        }
+
+        static void MatchRequest(RequestService requests)
+        {
+            ShowRequests(requests.Requests);
+            int id = Input.RequireInt("ID запиту: ");
+
+            var matches = requests.Match(id);
+            Console.WriteLine($"\nПідходящих існуючих полісів: {matches.Count}");
+            foreach (var p in matches) PrintPolicy(p);
+
+            Console.WriteLine($"Орієнтовна вартість нового поліса за запитом: {requests.EstimateCost(id):0.##} грн");
         }
     }
 }

@@ -25,7 +25,7 @@ namespace InsuranceSystem.ConsoleUI
             Menu("=== СИСТЕМА УПРАВЛІННЯ СТРАХОВОЮ КОМПАНІЄЮ ===", "Вихід",
                 ("Клієнти",          Sub(() => ClientsMenu(app.Clients, app.Agents))),
                 ("Поліси",           Sub(() => PoliciesMenu(app.Policies, app.Clients))),
-                ("Агенти",           Sub(() => AgentsMenu(app.Agents, app.Clients))),
+                ("Агенти",           Sub(() => AgentsMenu(app.Agents, app.Clients, app.Requests))),
                 ("Страхові випадки", Sub(() => ClaimsMenu(app.Claims, app.Policies))),
                 ("Статистика",       Sub(() => StatisticsMenu(app.Statistics))),
                 ("Запити клієнтів", Sub(() => RequestsMenu(app.Requests, app.Clients))));
