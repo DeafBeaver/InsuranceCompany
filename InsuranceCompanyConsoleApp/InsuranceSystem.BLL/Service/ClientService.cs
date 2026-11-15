@@ -70,7 +70,7 @@ namespace InsuranceSystem.BLL.Services
 
             if (_context.Database.Policies.Any(p => p.ClientId == id))
                 throw new ValidationException("Не можна видалити клієнта, у якого є поліси!");
-
+                
             _context.Database.Clients.Remove(client);
             _context.Database.Requests.RemoveAll(r => r.ClientId == id);
             _context.Save();
@@ -108,8 +108,13 @@ namespace InsuranceSystem.BLL.Services
         /// <returns></returns>
         public decimal TotalPayouts(int clientId)
         {
+            var policyIds = _context.Database.Policies
+                .Where(p => p.ClientId == clientId)
+                .Select(p => p.Id)
+                .ToHashSet();
+
             return _context.Database.Payments
-                .Where(p => p.Type == PaymentType.Payout && p.PolicyId == clientId)
+                .Where(p => p.Type == PaymentType.Payout && policyIds.Contains(p.PolicyId))
                 .Sum(p => p.Amount);
         }
     }

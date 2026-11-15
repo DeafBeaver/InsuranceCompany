@@ -20,7 +20,7 @@ namespace InsuranceSystem.BLL.Services
             Claims = new ClaimService(ctx);
             Agents = new AgentService(ctx);
             Statistics = new StatisticService(ctx);
-            Requests = new RequestService(ctx);
+            Requests = new RequestService(ctx, Policies);
 
             Policies.RefreshStatuses();
         }

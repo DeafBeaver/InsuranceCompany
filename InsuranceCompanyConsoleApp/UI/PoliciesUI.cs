@@ -42,7 +42,8 @@ namespace InsuranceSystem.ConsoleUI
                 CoverageAmount = coverage,
                 StartDate = start,
                 EndDate = start.AddMonths(months),
-                ClientId = clientId
+                ClientId = clientId,
+                AgentId = clients.Get(clientId).AgentId
             };
             policies.Add(policy);
             Console.WriteLine($"Поліс створено! ID: {policy.Id}, вартість: {policy.Cost} грн");

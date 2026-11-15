@@ -23,5 +23,7 @@ namespace InsuranceSystem.Core.Entities
         public decimal Cost { get; set; }
         public PolicyStatus Status { get; set; }
         public int ClientId { get; set; }
+        public int? AgentId { get; set; } = null;
+        public int? RequestId { get; set; } = null;
     }
 }
