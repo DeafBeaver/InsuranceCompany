@@ -16,9 +16,9 @@ namespace InsuranceSystem.ConsoleUI
         static void ShowClaims(ClaimService claims)
         {
             Console.WriteLine("\n--- СТРАХОВІ ВИПАДКИ ---");
-            if (claims.Claims.Count == 0) { Console.WriteLine("Випадків немає."); return; }
+            if (claims.Get().Count == 0) { Console.WriteLine("Випадків немає."); return; }
 
-            foreach (var c in claims.Claims)
+            foreach (var c in claims.Get())
                 Console.WriteLine(
                     $"[ID: {c.Id}] Поліс ID: {c.PolicyId} | Статус: {c.Status} | " +
                     $"Дата: {c.Date:dd.MM.yyyy} | Виплата: {c.PayoutAmount} грн | {c.Description}");
@@ -27,7 +27,7 @@ namespace InsuranceSystem.ConsoleUI
         static void RegisterClaim(ClaimService claims, PolicyService policies)
         {
             Console.WriteLine("Активні поліси:");
-            foreach (var p in policies.Policies.Where(p => p.Status == PolicyStatus.Active))
+            foreach (var p in policies.Get().Where(p => p.Status == PolicyStatus.Active))
                 PrintPolicy(p);
 
             var claim = new Claim
@@ -45,7 +45,7 @@ namespace InsuranceSystem.ConsoleUI
         {
             ShowClaims(claims);
             int id = Input.RequireInt("ID випадку: ");
-            var claim = claims.Claims.FirstOrDefault(c => c.Id == id);
+            var claim = claims.Get().FirstOrDefault(c => c.Id == id);
             claims.DoPayout(id);
             Console.WriteLine($"Виплата по страховому випадку ID {id} проведена.");
         }

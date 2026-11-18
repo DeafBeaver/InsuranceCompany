@@ -1,84 +1,64 @@
 using InsuranceSystem.BLL.Persistence;
 using InsuranceSystem.Core.Entities;
 using InsuranceSystem.Core.Exceptions;
+using Microsoft.EntityFrameworkCore;
 
 namespace InsuranceSystem.BLL.Services
 {
     public class AgentService
     {
-        private readonly InsuranceContext _context;
+        private readonly InsuranceDbContext _context;
 
-        public AgentService(InsuranceContext context) => _context = context;
+        public AgentService(InsuranceDbContext context)
+        {
+            _context = context;
+        }
 
-        /// <summary>
-        /// Gets a read-only collection of all Agents in the system.
-        /// </summary>
-        public IReadOnlyList<Agent> Agents => _context.Database.Agents;
+        public IReadOnlyList<Agent> Get() => _context.Agents.ToList();
 
-        /// <summary>
-        /// Gets an agent by their ID.
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        /// <exception cref="EntityNotFoundException"></exception>
-        public Agent Get(int id) =>
-            _context.Database.Agents.FirstOrDefault(a => a.Id == id)
-            ?? throw new EntityNotFoundException("Агент", id);
+        public List<Client> GetAgentsClients(int agentId) =>
+            _context.Clients
+                .Where(c => c.AgentId == agentId)
+                .ToList();
 
-        /// <summary>
-        /// Gets a list of clients associated with a specific agent.
-        /// </summary>
-        /// <param name="agentId"></param>
-        /// <returns></returns>
-        public List<Client> GetClients(int agentId) =>
-            _context.Database.Clients.Where(c => c.AgentId == agentId).ToList();
+        public Agent GetById(int id) =>
+            _context.Agents.Find(id) ?? throw new EntityNotFoundException("Агент", id);
 
-        /// <summary>
-        /// Add a new agent to the system.
-        /// </summary>
-        /// <param name="agent"></param>
-        /// <exception cref="ValidationException"></exception>
         public void Add(Agent agent)
         {
             ArgumentNullException.ThrowIfNull(agent);
             if (string.IsNullOrWhiteSpace(agent.Name))
                 throw new ValidationException("Ім'я агента не може бути порожнім!");
 
-            agent.Id = _context.Database.NextAgentId++;
-            _context.Database.Agents.Add(agent);
-            _context.Save();
+            _context.Agents.Add(agent);
+            _context.SaveChanges();
         }
-        /// <summary>
-        /// Update an existing agent's information.
-        /// </summary>
-        /// <param name="id"></param>
-        /// <param name="name"></param>
-        /// <param name="commissionRate"></param>
+
         public void Update(int id, string? name, decimal? commissionRate)
         {
-            var agent = Get(id);
+            var agent = GetById(id);
 
             if (name != null) agent.Name = name;
             if (commissionRate.HasValue) agent.CommissionRate = commissionRate.Value;
 
-            _context.Save();
+            _context.SaveChanges();
         }
-        /// <summary>
-        /// Delete an agent from the system. This will also disassociate any clients linked to this agent.
-        /// </summary>
-        /// <param name="id"></param>
+
         public void Delete(int id)
         {
-            var agent = Get(id);
+            var agent = GetById(id);
 
-            if (_context.Database.Policies.Any(p => p.AgentId == id))
+            if (_context.Policies.Any(p => p.AgentId == id))
                 throw new ValidationException("До агента прив'язані поліси.");
 
-            foreach (var client in _context.Database.Clients.Where(c => c.AgentId == id))
+            var clientsToUpdate = _context.Clients.Where(c => c.AgentId == id).ToList();
+            foreach (var client in clientsToUpdate)
+            {
                 client.AgentId = null;
+            }
 
-            _context.Database.Agents.Remove(agent);
-            _context.Save();
+            _context.Agents.Remove(agent);
+            _context.SaveChanges();
         }
     }
 }

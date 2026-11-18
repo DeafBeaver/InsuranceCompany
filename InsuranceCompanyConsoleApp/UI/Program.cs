@@ -2,6 +2,7 @@ using System.Text;
 using InsuranceSystem.BLL.Persistence;
 using InsuranceSystem.BLL.Services;
 using InsuranceSystem.Core.Exceptions;
+using SQLitePCL;
 
 namespace InsuranceSystem.ConsoleUI
 {
@@ -11,14 +12,16 @@ namespace InsuranceSystem.ConsoleUI
         {
             Console.OutputEncoding = Encoding.UTF8;
 
+            Batteries.Init();
+
             InsuranceSystemManager app;
             try
             {
-                app = new InsuranceSystemManager(new JsonStorage("insurance_data.json"));
+                app = new InsuranceSystemManager();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Не вдалося завантажити дані: {ex.Message}");
+                Console.WriteLine($"Не вдалося ініціалізувати базу даних або систему: {ex.Message}");
                 return;
             }
 

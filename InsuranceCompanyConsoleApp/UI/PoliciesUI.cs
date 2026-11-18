@@ -23,8 +23,8 @@ namespace InsuranceSystem.ConsoleUI
         static void ShowPolicies(PolicyService policies)
         {
             Console.WriteLine("\n--- СПИСОК ПОЛІСІВ ---");
-            if (policies.Policies.Count == 0) { Console.WriteLine("Полісів немає."); return; }
-            foreach (var p in policies.Policies) PrintPolicy(p);
+            if (policies.Get().Count == 0) { Console.WriteLine("Полісів немає."); return; }
+            foreach (var p in policies.Get()) PrintPolicy(p);
         }
 
         static void AddPolicy(PolicyService policies, ClientService clients)
@@ -43,7 +43,7 @@ namespace InsuranceSystem.ConsoleUI
                 StartDate = start,
                 EndDate = start.AddMonths(months),
                 ClientId = clientId,
-                AgentId = clients.Get(clientId).AgentId
+                AgentId = clients.GetById(clientId).AgentId
             };
             policies.Add(policy);
             Console.WriteLine($"Поліс створено! ID: {policy.Id}, вартість: {policy.Cost} грн");

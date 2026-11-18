@@ -15,19 +15,19 @@ namespace InsuranceSystem.ConsoleUI
         static void ListClients(ClientService clients)
         {
             Console.WriteLine("Клієнти:");
-            foreach (var c in clients.Clients)
+            foreach (var c in clients.Get())
                 Console.WriteLine($"  [ID: {c.Id}] {c.FullName}");
         }
 
         static void ShowClients(ClientService clients, AgentService agents)
         {
             Console.WriteLine("\n--- СПИСОК КЛІЄНТІВ ---");
-            if (clients.Clients.Count == 0) { Console.WriteLine("Клієнтів немає."); return; }
+            if (clients.Get().Count == 0) { Console.WriteLine("Клієнтів немає."); return; }
 
-            foreach (var c in clients.Clients)
+            foreach (var c in clients.Get())
             {
                 string agent = c.AgentId.HasValue
-                    ? agents.Agents.FirstOrDefault(a => a.Id == c.AgentId)?.Name ?? "?"
+                    ? agents.Get().FirstOrDefault(a => a.Id == c.AgentId)?.Name ?? "?"
                     : "—";
                 Console.WriteLine(
                     $"[ID: {c.Id}] {c.FullName} ({c.Type}) | Контакти: {c.ContactInfo} | " +

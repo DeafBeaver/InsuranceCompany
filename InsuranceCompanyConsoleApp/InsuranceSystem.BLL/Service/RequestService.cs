@@ -7,19 +7,17 @@ namespace InsuranceSystem.BLL.Services
 {
     public class RequestService
     {
-        private PolicyService _policies;
-        private readonly InsuranceContext _context;
+        private readonly InsuranceDbContext _context;
 
-        public RequestService(InsuranceContext context, PolicyService policyService)
+        public RequestService(InsuranceDbContext context)
         {
             _context = context;
-            _policies = policyService;
         }
 
         /// <summary>
         /// Gets a read-only list of all requests in the system.
         /// </summary>
-        public IReadOnlyList<Request> Requests => _context.Database.Requests;
+        public IReadOnlyList<Request> Requests => _context.Requests.ToList();
 
         /// <summary>
         /// Retrieves a specific insurance request by its unique identifier.
@@ -28,7 +26,7 @@ namespace InsuranceSystem.BLL.Services
         /// <returns>The found <see cref="Request"/> object.</returns>
         /// <exception cref="EntityNotFoundException">Thrown if the request with the specified ID is not found.</exception>
         public Request Get(int id) =>
-            _context.Database.Requests.FirstOrDefault(r => r.Id == id)
+            _context.Requests.FirstOrDefault(r => r.Id == id)
             ?? throw new EntityNotFoundException("Запит", id);
 
         /// <summary>
@@ -37,7 +35,7 @@ namespace InsuranceSystem.BLL.Services
         /// <param name="clientId">The unique identifier of the client.</param>
         /// <returns>A list of requests (<see cref="List{Request}"/>) belonging to the client.</returns>
         public List<Request> GetByClient(int clientId) =>
-            _context.Database.Requests.Where(r => r.ClientId == clientId).ToList();
+            _context.Requests.Where(r => r.ClientId == clientId).ToList();
 
         /// <summary>
         /// Adds a new insurance request to the system after passing validation checks.
@@ -50,19 +48,18 @@ namespace InsuranceSystem.BLL.Services
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            if (!_context.Database.Clients.Any(c => c.Id == request.ClientId))
+            if (!_context.Clients.Any(c => c.Id == request.ClientId))
                 throw new EntityNotFoundException("Клієнт", request.ClientId);
             if (request.DesiredCoverage <= 0)
                 throw new ValidationException("Бажана сума покриття має бути більшою за нуль!");
             if (request.TermMonths <= 0)
                 throw new ValidationException("Строк має бути більшим за нуль місяців!");
 
-            request.Id = _context.Database.NextRequestId++;
             request.Status = RequestStatus.New;
             request.CreatedAt = DateTime.Now;
 
-            _context.Database.Requests.Add(request);
-            _context.Save();
+            _context.Requests.Add(request);
+            _context.SaveChanges();
         }
 
         /// <summary>
@@ -84,7 +81,7 @@ namespace InsuranceSystem.BLL.Services
             if (request.Status == RequestStatus.Processed)
                 throw new ValidationException("Запит уже оброблено!");
 
-            var client = _context.Database.Clients.Find(c => c.Id == request.ClientId) 
+            var client = _context.Clients.Find(request.ClientId) 
                 ?? throw new EntityNotFoundException("Клієнт", request.ClientId);
 
             if (client.AgentId == null)
@@ -104,9 +101,9 @@ namespace InsuranceSystem.BLL.Services
                 RequestId = request.Id
             };
 
-            _policies.Add(policy);
+            _context.Policies.Add(policy);
             request.Status = RequestStatus.Processed;
-            _context.Save();
+            _context.SaveChanges();
         }
 
         /// <summary>
@@ -118,7 +115,7 @@ namespace InsuranceSystem.BLL.Services
         {
             var r = Get(requestId);
 
-            return _context.Database.Policies.Where(p =>
+            return _context.Policies.Where(p =>
                 p.Status == PolicyStatus.Active &&
                 p.Type == r.Type &&
                 p.CoverageAmount >= r.DesiredCoverage &&

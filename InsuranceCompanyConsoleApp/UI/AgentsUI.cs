@@ -17,17 +17,15 @@ namespace InsuranceSystem.ConsoleUI
             ("Створити поліс за запитом", () => ProcessRequest(request, agents, clients)),
             ("Підібрати поліси під запит", () => MatchRequest(request)));
 
-
-
         static void ShowAgents(AgentService agents)
         {
             Console.WriteLine("\n--- СПИСОК АГЕНТІВ ---");
-            if (agents.Agents.Count == 0) { Console.WriteLine("Агентів немає."); return; }
+            if (agents.Get().Count == 0) { Console.WriteLine("Агентів немає."); return; }
 
-            foreach (var a in agents.Agents)
+            foreach (var a in agents.Get())
             {
                 Console.WriteLine($"[ID: {a.Id}] {a.Name} | Комісія: {a.CommissionRate * 100}%");
-                foreach (var c in agents.GetClients(a.Id))
+                foreach (var c in agents.GetAgentsClients(a.Id))
                     Console.WriteLine($"    - Клієнт [ID: {c.Id}] {c.FullName}");
             }
         }
@@ -89,7 +87,7 @@ namespace InsuranceSystem.ConsoleUI
 
             int agentId = Input.RequireInt("ID агента якого закріпити: ");
 
-            var client = clients.Get(requests.Get(requestId).ClientId);
+            var client = clients.GetById(requests.Get(requestId).ClientId);
 
             if (client.AgentId == null)
             {
