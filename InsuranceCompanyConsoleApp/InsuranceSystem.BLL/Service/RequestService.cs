@@ -98,12 +98,27 @@ namespace InsuranceSystem.BLL.Services
                 EndDate = start.AddMonths(request.TermMonths),
                 ClientId = request.ClientId,
                 AgentId = agentId,
-                RequestId = request.Id
+                RequestId = request.Id,
+                Cost = PolicyService.CalculateCost(request.DesiredCoverage),
+                Status = PolicyStatus.Active
             };
 
+            using var transaction = _context.Database.BeginTransaction();
+
             _context.Policies.Add(policy);
+            _context.SaveChanges();
+
+            _context.Payments.Add(new Payment
+            {
+                Date = DateTime.Now,
+                Amount = policy.Cost,
+                Type = PaymentType.Contribution,
+                PolicyId = policy.Id
+            });
             request.Status = RequestStatus.Processed;
             _context.SaveChanges();
+
+            transaction.Commit();
         }
 
         /// <summary>

@@ -1,5 +1,5 @@
 using InsuranceSystem.BLL.Persistence;
-using InsuranceSystem.BLL.Service.AuthApi;
+
 using InsuranceSystem.BLL.Services;
 using InsuranceSystem.Core.Exceptions;
 using SQLitePCL;
@@ -46,33 +46,27 @@ namespace InsuranceSystem.ConsoleUI
                 Console.WriteLine($"Не вдалося ініціалізувати базу даних: {ex.Message}");
                 return;
             }
-            await RunMenuBasedOnRole(authResult.Role, authResult.Token, authClient, app);
+            var session = new Session(
+                authResult.Role,
+                username,
+                app.Clients.Get().FirstOrDefault(c => string.Equals(c.Login, username, StringComparison.OrdinalIgnoreCase)),
+                app.Agents.Get().FirstOrDefault(a => string.Equals(a.Login, username, StringComparison.OrdinalIgnoreCase)));
+
+            await RunMenuBasedOnRole(authResult.Role, authResult.Token, authClient, app, session);
         }
 
-        static async Task RunMenuBasedOnRole(string role, string currentToken, AuthApiClient authClient, InsuranceSystemManager app)
+        static async Task RunMenuBasedOnRole(string role, string currentToken, AuthApiClient authClient, InsuranceSystemManager app, Session session)
         {
             switch (role)
             {
                 case "Client":
-                    Menu("=== МЕНЮ КЛІЄНТА ===", "Вихід",
-                    ("Мої поліси", Sub(() => PoliciesMenu(app.Policies, app.Clients))),
-                    ("Створити запит", Sub(() => RequestsMenu(app.Requests, app.Clients))));
+                    ClientRoleMenu(app, session);
                     break;
                 case "Agent":
-                    Menu("=== МЕНЮ АГЕНТА ===", "Вихід",
-                    ("Клієнти", Sub(() => ClientsMenu(app.Clients, app.Agents))),
-                    ("Поліси", Sub(() => PoliciesMenu(app.Policies, app.Clients))),
-                    ("Агенти", Sub(() => AgentsMenu(app.Agents, app.Clients, app.Requests))),
-                    ("Страхові випадки", Sub(() => ClaimsMenu(app.Claims, app.Policies))));
+                    AgentRoleMenu(app, session);
                     break;
                 case "Manager":
-                    Menu("=== МЕНЮ МЕНЕДЖЕРА ===", "Вихід",
-                        ("Клієнти", Sub(() => ClientsMenu(app.Clients, app.Agents))),
-                        ("Поліси", Sub(() => PoliciesMenu(app.Policies, app.Clients))),
-                        ("Агенти", Sub(() => AgentsMenu(app.Agents, app.Clients, app.Requests))),
-                        ("Страхові випадки", Sub(() => ClaimsMenu(app.Claims, app.Policies))),
-                        ("Статистика", Sub(() => StatisticsMenu(app.Statistics))),
-                        ("Запити клієнтів", Sub(() => RequestsMenu(app.Requests, app.Clients))));
+                    ManagerRoleMenu(app);
                     break;
                 case "Admin":
                 case "Administrator":
@@ -129,13 +123,7 @@ namespace InsuranceSystem.ConsoleUI
                                     break;
 
                                 case "4":
-                                    Menu("=== МЕНЮ МЕНЕДЖЕРА ===", "Вихід",
-                                        ("Клієнти", Sub(() => ClientsMenu(app.Clients, app.Agents))),
-                                        ("Поліси", Sub(() => PoliciesMenu(app.Policies, app.Clients))),
-                                        ("Агенти", Sub(() => AgentsMenu(app.Agents, app.Clients, app.Requests))),
-                                        ("Страхові випадки", Sub(() => ClaimsMenu(app.Claims, app.Policies))),
-                                        ("Статистика", Sub(() => StatisticsMenu(app.Statistics))),
-                                        ("Запити клієнтів", Sub(() => RequestsMenu(app.Requests, app.Clients))));
+                                    ManagerRoleMenu(app);
                                     break;
 
                                 case "0":

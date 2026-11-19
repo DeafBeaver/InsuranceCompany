@@ -42,7 +42,8 @@ namespace InsuranceSystem.ConsoleUI
             {
                 FullName = Input.RequireText("ПІБ: "),
                 ContactInfo = Input.Text("Контакти [Enter - пропустити]: ") ?? "",
-                Type = Input.RequireChoice<ClientType>("Тип клієнта:")
+                Type = Input.RequireChoice<ClientType>("Тип клієнта:"),
+                Login = Input.Text("Логін у системі авторизації [Enter - пропустити]: ")
             };
             clients.Add(client);
             Console.WriteLine($"Клієнта додано! ID: {client.Id}");
@@ -52,9 +53,9 @@ namespace InsuranceSystem.ConsoleUI
         {
             ListClients(clients);
             int id = Input.RequireInt("ID клієнта: ");
-            var name    = Input.Text("Нове ПІБ [Enter - пропустити]: ");
+            var name = Input.Text("Нове ПІБ [Enter - пропустити]: ");
             var contact = Input.Text("Нові контакти [Enter - пропустити]: ");
-            var type    = Input.Choice<ClientType>("Новий тип [Enter - пропустити]:");
+            var type = Input.Choice<ClientType>("Новий тип [Enter - пропустити]:");
 
             clients.Update(id, name, contact, type);
             Console.WriteLine("Клієнта оновлено!");

@@ -35,7 +35,8 @@ namespace InsuranceSystem.ConsoleUI
             var agent = new Agent
             {
                 Name = Input.RequireText("Ім'я агента: "),
-                CommissionRate = Input.RequireDecimal("Комісія (0.0 - 1.0): ")
+                CommissionRate = Input.RequireDecimal("Комісія (0.0 - 1.0): "),
+                Login = Input.Text("Логін у системі авторизації [Enter - пропустити]: ")
             };
             agents.Add(agent);
             Console.WriteLine($"Агента додано! ID: {agent.Id}");
@@ -97,7 +98,7 @@ namespace InsuranceSystem.ConsoleUI
 
                 clients.SetAgent(client.Id, agentId);
             }
-            
+
 
             requests.MakePolicyByRequest(requestId, agentId);
             Console.WriteLine($"Поліс створено по запиту {requestId}!");
