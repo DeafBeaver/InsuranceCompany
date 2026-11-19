@@ -1,5 +1,6 @@
-using InsuranceSystem.BLL.Service;
 using InsuranceSystem.BLL.Persistence;
+using InsuranceSystem.BLL.Service;
+using Microsoft.EntityFrameworkCore;
 
 namespace InsuranceSystem.BLL.Services
 {
@@ -12,15 +13,18 @@ namespace InsuranceSystem.BLL.Services
         public StatisticService Statistics { get; }
         public RequestService Requests { get; }
 
-        public InsuranceSystemManager(IStorage storage)
+        public InsuranceSystemManager()
         {
-            var ctx = new InsuranceContext(storage);
+            var ctx = new InsuranceDbContext();
+            
+            ctx.Database.EnsureCreated();
+
             Clients = new ClientService(ctx);
             Policies = new PolicyService(ctx);
             Claims = new ClaimService(ctx);
             Agents = new AgentService(ctx);
             Statistics = new StatisticService(ctx);
-            Requests = new RequestService(ctx, Policies);
+            Requests = new RequestService(ctx);
 
             Policies.RefreshStatuses();
         }

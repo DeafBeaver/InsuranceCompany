@@ -10,8 +10,8 @@ namespace InsuranceSystem.BLL.Service
 {
     public class StatisticService
     {
-        private InsuranceContext _context;
-        public StatisticService(InsuranceContext context)
+        private InsuranceDbContext _context;
+        public StatisticService(InsuranceDbContext context)
         {
             _context = context;
         }
@@ -22,7 +22,9 @@ namespace InsuranceSystem.BLL.Service
         /// <returns>A list of active <see cref="Policy"/> objects.</returns>
         public List<Policy> GetActivePolicies()
         {
-            return _context.Database.Policies.FindAll(p => p.Status == Core.Enums.PolicyStatus.Active);
+            return _context.Policies
+                .Where(p => p.Status == PolicyStatus.Active)
+                .ToList();
         }
 
         /// <summary>
@@ -30,7 +32,9 @@ namespace InsuranceSystem.BLL.Service
         /// </summary>
         /// <returns>The total payout amount as a <see cref="decimal"/> value.</returns>
         public decimal TotalPayouts() =>
-            _context.Database.Payments.Where(p => p.Type == PaymentType.Payout).Sum(p => p.Amount);
+            _context.Payments
+                .Where(p => p.Type == PaymentType.Payout)
+                .Sum(p => p.Amount);
 
         /// <summary>
         /// Calculates performance metrics and total earned commission for a specific agent.
@@ -40,10 +44,10 @@ namespace InsuranceSystem.BLL.Service
         /// <exception cref="EntityNotFoundException">Thrown if the agent with the specified ID is not found.</exception>
         public (int PoliciesCount, decimal Commission) GetAgentEfficiency(int agentId)
         {
-            var agent = _context.Database.Agents.FirstOrDefault(a => a.Id == agentId)
+            var agent = _context.Agents.FirstOrDefault(a => a.Id == agentId)
                 ?? throw new EntityNotFoundException("Агент", agentId);
             
-            var policies = _context.Database.Policies
+            var policies = _context.Policies
                 .Where(p => p.AgentId == agentId).ToList();
 
             return (policies.Count, policies.Sum(p => p.Cost) * agent.CommissionRate);
@@ -62,12 +66,16 @@ namespace InsuranceSystem.BLL.Service
         /// Retrieves statistical summaries for all agents registered in the system.
         /// </summary>
         /// <returns>A list of <see cref="AgentStats"/> records representing agent efficiencies.</returns>
-        public List<AgentStats> GetAllAgentsStats() =>
-            _context.Database.Agents.Select(a =>
+        public List<AgentStats> GetAllAgentsStats()
+        {
+            var agents = _context.Agents.ToList();
+
+            return agents.Select(a =>
             {
                 var (count, commission) = GetAgentEfficiency(a.Id);
                 return new AgentStats(a.Id, a.Name, count, commission);
             }).ToList();
+        }
 
         /// <summary>
         /// Retrieves a list of all insurance claims registered within a specific date range.
@@ -81,7 +89,7 @@ namespace InsuranceSystem.BLL.Service
             if (end.Date < start.Date)
                 throw new ValidationException("Кінцева дата раніше за початкову!");
             var endExclusive = end.Date.AddDays(1);
-            return _context.Database.Claims
+            return _context.Claims
                 .Where(c => c.Date >= start.Date && c.Date < endExclusive).ToList();
         }
 
@@ -102,7 +110,7 @@ namespace InsuranceSystem.BLL.Service
         public List<TypeStats> GetTypeStats() =>
             Enum.GetValues<PolicyType>().Select(t =>
             {
-                var list = _context.Database.Policies.Where(p => p.Type == t).ToList();
+                var list = _context.Policies.Where(p => p.Type == t).ToList();
                 return new TypeStats(t, list.Count,
                     list.Count(p => p.Status == PolicyStatus.Active),
                     list.Count(p => p.Status == PolicyStatus.Completed),
@@ -112,7 +120,7 @@ namespace InsuranceSystem.BLL.Service
         /// <summary>
         /// Gets a read-only collection of all financial payments recorded in the system.
         /// </summary>
-        public IReadOnlyList<Payment> GetPayments() => _context.Database.Payments;
+        public IReadOnlyList<Payment> GetPayments() => _context.Payments.ToList();
 
         /// <summary>
         /// Calculates the net company income based on total contributions minus total payouts.
@@ -120,7 +128,7 @@ namespace InsuranceSystem.BLL.Service
         /// <returns>The net income value as a <see cref="decimal"/>.</returns>
         public decimal GetCompanyIncome()
         {
-            var payments = _context.Database.Payments;
+            var payments = _context.Payments;
             return payments.Where(p => p.Type == PaymentType.Contribution).Sum(p => p.Amount)
                  - payments.Where(p => p.Type == PaymentType.Payout).Sum(p => p.Amount);
         }

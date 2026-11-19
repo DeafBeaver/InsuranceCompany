@@ -15,19 +15,19 @@ namespace InsuranceSystem.ConsoleUI
         static void ListClients(ClientService clients)
         {
             Console.WriteLine("Клієнти:");
-            foreach (var c in clients.Clients)
+            foreach (var c in clients.Get())
                 Console.WriteLine($"  [ID: {c.Id}] {c.FullName}");
         }
 
         static void ShowClients(ClientService clients, AgentService agents)
         {
             Console.WriteLine("\n--- СПИСОК КЛІЄНТІВ ---");
-            if (clients.Clients.Count == 0) { Console.WriteLine("Клієнтів немає."); return; }
+            if (clients.Get().Count == 0) { Console.WriteLine("Клієнтів немає."); return; }
 
-            foreach (var c in clients.Clients)
+            foreach (var c in clients.Get())
             {
                 string agent = c.AgentId.HasValue
-                    ? agents.Agents.FirstOrDefault(a => a.Id == c.AgentId)?.Name ?? "?"
+                    ? agents.Get().FirstOrDefault(a => a.Id == c.AgentId)?.Name ?? "?"
                     : "—";
                 Console.WriteLine(
                     $"[ID: {c.Id}] {c.FullName} ({c.Type}) | Контакти: {c.ContactInfo} | " +
@@ -42,7 +42,8 @@ namespace InsuranceSystem.ConsoleUI
             {
                 FullName = Input.RequireText("ПІБ: "),
                 ContactInfo = Input.Text("Контакти [Enter - пропустити]: ") ?? "",
-                Type = Input.RequireChoice<ClientType>("Тип клієнта:")
+                Type = Input.RequireChoice<ClientType>("Тип клієнта:"),
+                Login = Input.Text("Логін у системі авторизації [Enter - пропустити]: ")
             };
             clients.Add(client);
             Console.WriteLine($"Клієнта додано! ID: {client.Id}");
@@ -52,9 +53,9 @@ namespace InsuranceSystem.ConsoleUI
         {
             ListClients(clients);
             int id = Input.RequireInt("ID клієнта: ");
-            var name    = Input.Text("Нове ПІБ [Enter - пропустити]: ");
+            var name = Input.Text("Нове ПІБ [Enter - пропустити]: ");
             var contact = Input.Text("Нові контакти [Enter - пропустити]: ");
-            var type    = Input.Choice<ClientType>("Новий тип [Enter - пропустити]:");
+            var type = Input.Choice<ClientType>("Новий тип [Enter - пропустити]:");
 
             clients.Update(id, name, contact, type);
             Console.WriteLine("Клієнта оновлено!");

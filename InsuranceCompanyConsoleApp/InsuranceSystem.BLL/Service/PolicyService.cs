@@ -2,45 +2,27 @@ using InsuranceSystem.BLL.Persistence;
 using InsuranceSystem.Core.Entities;
 using InsuranceSystem.Core.Enums;
 using InsuranceSystem.Core.Exceptions;
+using Microsoft.EntityFrameworkCore;
 
 namespace InsuranceSystem.BLL.Services
 {
     public class PolicyService
     {
         public const decimal CostRate = 0.05m;
+        private readonly InsuranceDbContext _context;
 
-        private readonly InsuranceContext _context;
+        public PolicyService(InsuranceDbContext context)
+        {
+            _context = context;
+        }
 
-        public PolicyService(InsuranceContext context) => _context = context;
+        public IReadOnlyList<Policy> Get() => _context.Policies.ToList();
 
-        /// <summary>
-        /// Gets a read-only list of all policies in the system.
-        /// </summary>
-        public IReadOnlyList<Policy> Policies => _context.Database.Policies;
-
-        /// <summary>
-        /// Calculates the cost of a policy based on its coverage amount using a predefined cost rate.
-        /// </summary>
-        /// <param name="coverageAmount"></param>
-        /// <returns></returns>
         public static decimal CalculateCost(decimal coverageAmount) => coverageAmount * CostRate;
 
-        /// <summary>
-        /// Gets a specific policy by its ID.
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        /// <exception cref="EntityNotFoundException"></exception>
-        public Policy Get(int id) =>
-            _context.Database.Policies.FirstOrDefault(p => p.Id == id)
-            ?? throw new EntityNotFoundException("Поліс", id);
+        public Policy GetById(int id) =>
+            _context.Policies.Find(id) ?? throw new EntityNotFoundException("Поліс", id);
 
-        /// <summary>
-        /// Adds a new policy to the system after validating its details.
-        /// </summary>
-        /// <param name="policy"></param>
-        /// <exception cref="ValidationException"></exception>
-        /// <exception cref="EntityNotFoundException"></exception>
         public void Add(Policy policy)
         {
             ArgumentNullException.ThrowIfNull(policy);
@@ -49,39 +31,32 @@ namespace InsuranceSystem.BLL.Services
                 throw new ValidationException("Сума покриття має бути більшою за нуль!");
             ValidateDates(policy.StartDate, policy.EndDate);
 
-            if (!_context.Database.Clients.Any(c => c.Id == policy.ClientId))
+            if (!_context.Clients.Any(c => c.Id == policy.ClientId))
                 throw new EntityNotFoundException("Клієнт", policy.ClientId);
 
-            policy.Id = _context.Database.NextPolicyId++;
             policy.Cost = CalculateCost(policy.CoverageAmount);
             policy.Status = PolicyStatus.Active;
 
-            _context.Database.Policies.Add(policy);
-            _context.Database.Payments.Add(new Payment
+            _context.Policies.Add(policy);
+
+            //save before to generate policy id for payment
+            _context.SaveChanges();
+
+            _context.Payments.Add(new Payment
             {
-                Id = _context.Database.NextPaymentId++,
                 Date = DateTime.Now,
                 Amount = policy.Cost,
                 Type = PaymentType.Contribution,
                 PolicyId = policy.Id
             });
-            _context.Save();
+
+            _context.SaveChanges();
         }
 
-        /// <summary>
-        /// Updates an existing policy with new information.
-        /// </summary>
-        /// <param name="id"></param>
-        /// <param name="type"></param>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <param name="coverageAmount"></param>
-        /// <exception cref="EntityNotFoundException"></exception>
-        /// <exception cref="ValidationException"></exception>
         public void Update(int id, PolicyType? type = null, DateTime? startDate = null,
                            DateTime? endDate = null, decimal? coverageAmount = null)
         {
-            var policy = Get(id);
+            var policy = GetById(id);
 
             var newStart = startDate ?? policy.StartDate;
             var newEnd = endDate ?? policy.EndDate;
@@ -96,51 +71,34 @@ namespace InsuranceSystem.BLL.Services
             if (coverageAmount.HasValue) policy.CoverageAmount = coverageAmount.Value;
             policy.Cost = CalculateCost(policy.CoverageAmount);
 
-            _context.Save();
+            _context.SaveChanges();
         }
 
-        /// <summary>
-        /// Changes status of policy
-        /// </summary>
-        /// <param name="id">
-        /// <param name="newStatus">
         public void ChangeStatus(int id, PolicyStatus newStatus)
         {
-            Get(id).Status = newStatus;
-            _context.Save();
+            GetById(id).Status = newStatus;
+            _context.SaveChanges();
         }
 
-        /// <summary>
-        /// Deletes policy 
-        /// </summary>
-        /// <param name="id"></param>
-        /// <exception cref="ValidationException"></exception>
         public void Delete(int id)
         {
-            var policy = Get(id);
+            var policy = GetById(id);
 
-            if (_context.Database.Claims.Any(c => c.PolicyId == id))
+            if (_context.Claims.Any(c => c.PolicyId == id))
                 throw new ValidationException("Не можна видалити поліс, за яким є страхові випадки!");
 
-            _context.Database.Policies.Remove(policy);
-            _context.Database.Payments.RemoveAll(p => p.PolicyId == id);
-            _context.Save();
+            var payments = _context.Payments.Where(p => p.PolicyId == id).ToList();
+            _context.Payments.RemoveRange(payments);
+
+            _context.Policies.Remove(policy);
+            _context.SaveChanges();
         }
 
-        /// <summary>
-        /// Searches policy for type, client id, status, min | max cost. 
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="clientId"></param>
-        /// <param name="status"></param>
-        /// <param name="minCost"></param>
-        /// <param name="maxCost"></param>
-        /// <returns>List of Polices</returns>
         public List<Policy> Search(PolicyType? type = null, int? clientId = null,
                                    PolicyStatus? status = null,
                                    decimal? minCost = null, decimal? maxCost = null)
         {
-            return _context.Database.Policies.Where(p =>
+            return _context.Policies.Where(p =>
                 (!type.HasValue || p.Type == type.Value) &&
                 (!clientId.HasValue || p.ClientId == clientId.Value) &&
                 (!status.HasValue || p.Status == status.Value) &&
@@ -148,21 +106,18 @@ namespace InsuranceSystem.BLL.Services
                 (!maxCost.HasValue || p.Cost <= maxCost.Value)
             ).ToList();
         }
+
         private static void ValidateDates(DateTime start, DateTime end)
         {
             if (end <= start)
                 throw new ValidationException("Дата завершення має бути пізнішою за дату початку!");
         }
 
-        /// <summary>
-        /// Count of expired date polices
-        /// </summary>
-        /// <returns>Count in the Int</returns>
         public int RefreshStatuses()
         {
             var now = DateTime.Now;
 
-            var expired = _context.Database.Policies
+            var expired = _context.Policies
                 .Where(p => p.Status != PolicyStatus.Completed && p.EndDate < now)
                 .ToList();
 
@@ -170,7 +125,7 @@ namespace InsuranceSystem.BLL.Services
                 p.Status = PolicyStatus.Completed;
 
             if (expired.Count > 0)
-                _context.Save();
+                _context.SaveChanges();
 
             return expired.Count;
         }

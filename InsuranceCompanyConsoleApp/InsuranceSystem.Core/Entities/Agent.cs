@@ -6,7 +6,7 @@ namespace InsuranceSystem.Core.Entities
     {
         private string _name = string.Empty;
         private decimal _commissionRate;
-
+        public string? Login { get; set; }
         public int Id { get; set; }
 
         public string Name

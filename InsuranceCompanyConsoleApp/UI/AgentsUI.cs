@@ -17,17 +17,15 @@ namespace InsuranceSystem.ConsoleUI
             ("Створити поліс за запитом", () => ProcessRequest(request, agents, clients)),
             ("Підібрати поліси під запит", () => MatchRequest(request)));
 
-
-
         static void ShowAgents(AgentService agents)
         {
             Console.WriteLine("\n--- СПИСОК АГЕНТІВ ---");
-            if (agents.Agents.Count == 0) { Console.WriteLine("Агентів немає."); return; }
+            if (agents.Get().Count == 0) { Console.WriteLine("Агентів немає."); return; }
 
-            foreach (var a in agents.Agents)
+            foreach (var a in agents.Get())
             {
                 Console.WriteLine($"[ID: {a.Id}] {a.Name} | Комісія: {a.CommissionRate * 100}%");
-                foreach (var c in agents.GetClients(a.Id))
+                foreach (var c in agents.GetAgentsClients(a.Id))
                     Console.WriteLine($"    - Клієнт [ID: {c.Id}] {c.FullName}");
             }
         }
@@ -37,7 +35,8 @@ namespace InsuranceSystem.ConsoleUI
             var agent = new Agent
             {
                 Name = Input.RequireText("Ім'я агента: "),
-                CommissionRate = Input.RequireDecimal("Комісія (0.0 - 1.0): ")
+                CommissionRate = Input.RequireDecimal("Комісія (0.0 - 1.0): "),
+                Login = Input.Text("Логін у системі авторизації [Enter - пропустити]: ")
             };
             agents.Add(agent);
             Console.WriteLine($"Агента додано! ID: {agent.Id}");
@@ -89,7 +88,7 @@ namespace InsuranceSystem.ConsoleUI
 
             int agentId = Input.RequireInt("ID агента якого закріпити: ");
 
-            var client = clients.Get(requests.Get(requestId).ClientId);
+            var client = clients.GetById(requests.Get(requestId).ClientId);
 
             if (client.AgentId == null)
             {
@@ -99,7 +98,7 @@ namespace InsuranceSystem.ConsoleUI
 
                 clients.SetAgent(client.Id, agentId);
             }
-            
+
 
             requests.MakePolicyByRequest(requestId, agentId);
             Console.WriteLine($"Поліс створено по запиту {requestId}!");

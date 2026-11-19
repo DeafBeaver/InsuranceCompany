@@ -20,5 +20,6 @@ namespace InsuranceSystem.Core.Entities
         public string ContactInfo { get; set; } = string.Empty;
         public ClientType Type { get; set; }
         public int? AgentId { get; set; }
+        public string? Login { get; set; }
     }
 }
